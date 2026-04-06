@@ -1,12 +1,14 @@
-require('dotenv').config();
-const app = require('./app');
-const { connectDB } = require('./config/db');
-const logger = require('./utils/logger');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import app from './app';
+import { connectDB } from './config/db';
+import logger from './utils/logger';
 
 const PORT = process.env.PORT || 5000;
 
 // Handle Uncaught Exceptions
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', (err: Error) => {
   logger.error('UNCAUGHT EXCEPTION! Shutting down...', err);
   process.exit(1);
 });
@@ -22,7 +24,7 @@ const startServer = async () => {
     });
 
     // Handle Unhandled Rejections
-    process.on('unhandledRejection', (err) => {
+    process.on('unhandledRejection', (err: Error) => {
       logger.error('UNHANDLED REJECTION! Shutting down...', err);
       server.close(() => {
         process.exit(1);

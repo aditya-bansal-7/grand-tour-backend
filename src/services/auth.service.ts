@@ -1,16 +1,17 @@
-const { prisma } = require('../config/db');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+import { prisma } from '../config/db';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { Role } from '@prisma/client';
 
 // Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id: string) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET as string, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
 
 class AuthService {
-  async registerUser(userData) {
+  async registerUser(userData: any) {
     const { email, password, firstName, lastName, role } = userData;
 
     // Check if user already exists
@@ -19,7 +20,7 @@ class AuthService {
     });
 
     if (userExists) {
-      const error = new Error('User already exists');
+      const error: any = new Error('User already exists');
       error.statusCode = 400;
       throw error;
     }
@@ -35,7 +36,7 @@ class AuthService {
         lastName,
         email,
         password: hashedPassword,
-        role: role || 'STUDENT'
+        role: (role as Role) || 'STUDENT'
       }
     });
 
@@ -49,7 +50,7 @@ class AuthService {
     };
   }
 
-  async loginUser(credentials) {
+  async loginUser(credentials: any) {
     const { email, password } = credentials;
 
     // Find the user
@@ -68,13 +69,13 @@ class AuthService {
         token: generateToken(user.id)
       };
     } else {
-      const error = new Error('Invalid email or password');
+      const error: any = new Error('Invalid email or password');
       error.statusCode = 401;
       throw error;
     }
   }
 
-  async getUserProfile(userId) {
+  async getUserProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -88,7 +89,7 @@ class AuthService {
     });
 
     if (!user) {
-      const error = new Error('User not found');
+      const error: any = new Error('User not found');
       error.statusCode = 404;
       throw error;
     }
@@ -97,4 +98,4 @@ class AuthService {
   }
 }
 
-module.exports = new AuthService();
+export default new AuthService();

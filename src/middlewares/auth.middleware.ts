@@ -1,7 +1,8 @@
-const jwt = require('jsonwebtoken');
-const { prisma } = require('../config/db');
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../config/db';
 
-const requireAuth = async (req, res, next) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   let token;
 
   if (
@@ -13,10 +14,10 @@ const requireAuth = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
 
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
 
       // Get user from the token (exclude password)
-      req.user = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: decoded.id },
         select: {
           id: true,
@@ -27,11 +28,12 @@ const requireAuth = async (req, res, next) => {
         }
       });
 
-      if (!req.user) {
+      if (!user) {
         res.status(401);
         throw new Error('Not authorized, user not found');
       }
 
+      req.user = user;
       next();
     } catch (error) {
       res.status(401);
@@ -46,17 +48,12 @@ const requireAuth = async (req, res, next) => {
 };
 
 // Role-based access control
-const requireRole = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+export const requireRole = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role as string)) {
       res.status(403);
       throw new Error(`Forbidden: User role ${req.user?.role} is not authorized to access this route.`);
     }
     next();
   };
-};
-
-module.exports = {
-  requireAuth,
-  requireRole,
 };

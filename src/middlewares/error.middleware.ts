@@ -1,14 +1,15 @@
-const logger = require('../utils/logger');
+import { Request, Response, NextFunction } from 'express';
+import logger from '../utils/logger';
 
 // Catch 404 and forward to error handler
-const notFound = (req, res, next) => {
+export const notFound = (req: Request, res: Response, next: NextFunction) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
   next(error);
 };
 
 // General Error Handler
-const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   // If status is 200 but error occurred, set to 500
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message;
@@ -35,9 +36,4 @@ const errorHandler = (err, req, res, next) => {
     message: message,
     stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
-};
-
-module.exports = {
-  notFound,
-  errorHandler
 };

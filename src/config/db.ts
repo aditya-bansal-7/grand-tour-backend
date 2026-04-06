@@ -1,11 +1,11 @@
-const { PrismaClient } = require('@prisma/client');
-const logger = require('../utils/logger');
+import { PrismaClient } from '@prisma/client';
+import logger from '../utils/logger';
 
-const prisma = new PrismaClient({
+export const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
 });
 
-const connectDB = async () => {
+export const connectDB = async (): Promise<void> => {
   try {
     await prisma.$connect();
     logger.info('Database connection successfully established via Prisma');
@@ -13,9 +13,4 @@ const connectDB = async () => {
     logger.error('Failed to connect to the database', error);
     process.exit(1);
   }
-};
-
-module.exports = {
-  prisma,
-  connectDB
 };
