@@ -38,3 +38,14 @@ export const getMe = async (req: Request, res: Response) => {
     data: user
   });
 };
+
+// @desc    Authenticate via Google OAuth
+// @route   POST /api/auth/google
+// @access  Public
+export const googleLogin = async (req: Request, res: Response) => {
+  const user = await authService.googleLoginUser(req.body);
+  res.status(200).json({
+    success: true,
+    data: user
+  });
+};

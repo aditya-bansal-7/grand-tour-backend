@@ -12,7 +12,7 @@ const generateToken = (id: string) => {
 
 class AuthService {
   async registerUser(userData: any) {
-    const { email, password, firstName, lastName, role } = userData;
+    const { email, password, firstName, lastName, profileImage, role } = userData;
 
     // Check if user already exists
     const userExists = await prisma.user.findUnique({
@@ -35,6 +35,7 @@ class AuthService {
         firstName,
         lastName,
         email,
+        profileImage: profileImage || null,
         password: hashedPassword,
         role: (role as Role) || 'STUDENT'
       }
@@ -45,6 +46,7 @@ class AuthService {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      profileImage: user.profileImage,
       role: user.role,
       token: generateToken(user.id)
     };
@@ -65,6 +67,7 @@ class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        profileImage: user.profileImage,
         role: user.role,
         token: generateToken(user.id)
       };
@@ -83,6 +86,7 @@ class AuthService {
         email: true,
         firstName: true,
         lastName: true,
+        profileImage: true,
         role: true,
         createdAt: true
       }
@@ -95,6 +99,44 @@ class AuthService {
     }
 
     return user;
+  }
+
+  async googleLoginUser(userData: any) {
+    const { email, firstName, lastName, profileImage } = userData;
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      // Create user without password
+      user = await prisma.user.create({
+        data: {
+          firstName: firstName || 'User',
+          lastName: lastName || '',
+          profileImage: profileImage || null,
+          email,
+          role: 'STUDENT'
+        }
+      });
+    } else if (profileImage && !user.profileImage) {
+      // Opt: update the user with image if missing
+      user = await prisma.user.update({
+        where: { email },
+        data: { profileImage }
+      });
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImage: user.profileImage,
+      role: user.role,
+      token: generateToken(user.id)
+    };
   }
 }
 

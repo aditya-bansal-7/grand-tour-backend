@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import { notFound, errorHandler } from './middlewares/error.middleware';
 import logger from './utils/logger';
 import authRoutes from './routes/auth.routes';
+import uploadRoutes from './routes/upload.routes';
 
 const app: Application = express();
 
@@ -27,6 +28,7 @@ app.use(morgan('combined', {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health Check Route
 app.get('/health', (req: Request, res: Response) => {
