@@ -6,7 +6,7 @@ import { Role } from '@prisma/client';
 // Generate JWT Token
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET as string, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: "7d"
   });
 };
 
@@ -61,7 +61,7 @@ class AuthService {
     });
 
     // Check password
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (user?.password && await bcrypt.compare(password, user.password)) {
       return {
         id: user.id,
         email: user.email,
