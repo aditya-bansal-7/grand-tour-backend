@@ -48,12 +48,19 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 };
 
 // Role-based access control
-export const requireRole = (...roles: string[]) => {
+export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role as string)) {
-      res.status(403);
-      throw new Error(`Forbidden: User role ${req.user?.role} is not authorized to access this route.`);
+    if (!req.user) {
+      res.status(401);
+      throw new Error('Not authorized, no user found');
     }
-    next();
+    
+    // Always allow SUPER_ADMIN to bypass specific role checks
+    if (req.user.role === 'SUPER_ADMIN' || roles.includes(req.user.role as string)) {
+      return next();
+    }
+
+    res.status(403);
+    throw new Error(`Forbidden: User role ${req.user.role} is not authorized to access this route.`);
   };
 };

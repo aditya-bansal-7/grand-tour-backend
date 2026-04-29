@@ -8,6 +8,16 @@ import { notFound, errorHandler } from './middlewares/error.middleware';
 import logger from './utils/logger';
 import authRoutes from './routes/auth.routes';
 import uploadRoutes from './routes/upload.routes';
+import userRoutes from './routes/user.routes';
+import applicationRoutes from './routes/application.routes';
+import interviewRoutes from './routes/interview.routes';
+import workflowRoutes from './routes/workflow.routes';
+import activityRoutes from './routes/activity.routes';
+import notificationRoutes from './routes/notification.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import permissionRoutes from './routes/permission.routes';
+import documentRoutes from './routes/document.routes';
+
 
 const app: Application = express();
 
@@ -29,6 +39,16 @@ app.use(morgan('combined', {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/applications', applicationRoutes);
+app.use('/api/interviews', interviewRoutes);
+app.use('/api/workflow', workflowRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/documents', documentRoutes);
+
 
 // Health Check Route
 app.get('/health', (req: Request, res: Response) => {
