@@ -110,7 +110,9 @@ class ApplicationService {
         activities: {
           orderBy: { createdAt: 'desc' },
           take: 10
-        }
+        },
+        payment1: true,
+        payment2: true,
       }
     });
   }
