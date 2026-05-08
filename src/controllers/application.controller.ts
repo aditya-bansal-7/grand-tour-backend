@@ -14,6 +14,15 @@ export const createApplication = async (req: Request, res: Response) => {
   });
 };
 
+export const updateApplication = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const application = await applicationService.updateApplication(id, req.body);
+  res.status(200).json({
+    success: true,
+    data: application
+  });
+};
+
 export const getApplications = async (req: Request, res: Response) => {
   const applications = await applicationService.getAllApplications();
   res.status(200).json({

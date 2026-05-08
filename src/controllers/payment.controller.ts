@@ -9,8 +9,18 @@ export const submitPayment = async (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
   const { amount, description, utrNumber, screenshotUrl } = req.body;
 
+  const application = await prisma.application.findUnique({
+    where: { userId }
+  });
+
+  if (!application) {
+    res.status(404);
+    throw new Error('Application not found');
+  }
+
   const payment = await paymentService.createPayment({
     userId,
+    applicationId: application.id,
     amount: parseFloat(amount),
     description,
     utrNumber,
@@ -21,7 +31,7 @@ export const submitPayment = async (req: Request, res: Response) => {
   await activityService.log(
     `Payment submitted: ₹${amount} (UTR: ${utrNumber})`,
     'PAYMENT_SUBMITTED',
-    null,
+    undefined,
     userId
   );
 
@@ -49,7 +59,7 @@ export const approvePayment = async (req: Request, res: Response) => {
   await activityService.log(
     `Payment ${status.toLowerCase()}: ₹${payment.amount}`,
     'PAYMENT_UPDATE',
-    null,
+    undefined,
     (req as any).user?.id
   );
 

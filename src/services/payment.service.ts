@@ -4,6 +4,7 @@ import { PaymentStatus } from '@prisma/client';
 class PaymentService {
   async createPayment(data: {
     userId: string;
+    applicationId: string;
     amount: number;
     description?: string;
     utrNumber: string;
@@ -12,6 +13,7 @@ class PaymentService {
     return await prisma.payment.create({
       data: {
         userId: data.userId,
+        applicationId: data.applicationId,
         amount: data.amount,
         description: data.description,
         utrNumber: data.utrNumber,

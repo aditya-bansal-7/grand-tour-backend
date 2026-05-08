@@ -9,7 +9,9 @@ class ApplicationService {
         status: data.status,
         currentStepId: data.currentStepId,
         notes: data.notes,
-        data: data.data, // This now stores the nested Stage > Section > Field structure
+        data: data.data,
+        payment1Id: data.payment1Id || (data.payment1?.id),
+        payment2Id: data.payment2Id || (data.payment2?.id),
       },
       create: {
         userId: data.userId,
@@ -17,10 +19,33 @@ class ApplicationService {
         currentStepId: data.currentStepId || 'application',
         notes: data.notes,
         data: data.data || {},
+        payment1Id: data.payment1Id || (data.payment1?.id),
+        payment2Id: data.payment2Id || (data.payment2?.id),
       },
       include: {
         user: true,
+        payment1: true,
+        payment2: true,
       },
+    });
+  }
+
+  async updateApplication(id: string, data: any) {
+    return await prisma.application.update({
+      where: { id },
+      data: {
+        status: data.status,
+        currentStepId: data.currentStepId,
+        notes: data.notes,
+        data: data.data,
+        payment1Id: data.payment1Id || (data.payment1?.id),
+        payment2Id: data.payment2Id || (data.payment2?.id),
+      },
+      include: {
+        user: true,
+        payment1: true,
+        payment2: true,
+      }
     });
   }
 

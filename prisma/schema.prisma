@@ -87,6 +87,7 @@ model Application {
   interviews Interview[]
   activities ActivityLog[]
   documents  Document[]
+  payments   Payment[]
   interviewSlot InterviewSlot?
   hotelAssignment HotelAssignment?
 }
@@ -112,6 +113,8 @@ model Payment {
   description   String?
   utrNumber     String?
   screenshotUrl String?
+  applicationAsPayment1 Application? @relation("Payment1")
+  applicationAsPayment2 Application? @relation("Payment2")
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
