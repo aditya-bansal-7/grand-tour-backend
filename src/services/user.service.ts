@@ -29,7 +29,7 @@ class UserService {
   }
 
   async createUser(userData: any) {
-    const { email, password, firstName, lastName, role } = userData;
+    const { email, password, firstName, lastName, role, whatsapp, dateOfBirth, address, city, state, pincode } = userData;
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
@@ -40,6 +40,29 @@ class UserService {
         firstName,
         lastName,
         role: role as Role,
+        whatsapp,
+        dateOfBirth,
+        address,
+        city,
+        state,
+        pincode,
+      },
+    });
+  }
+
+  async updateUser(id: string, data: any) {
+    return await prisma.user.update({
+      where: { id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        profileImage: data.profileImage,
+        whatsapp: data.whatsapp,
+        dateOfBirth: data.dateOfBirth,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
       },
     });
   }

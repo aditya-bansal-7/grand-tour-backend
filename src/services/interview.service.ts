@@ -42,6 +42,29 @@ class InterviewService {
     });
   }
 
+  async getInterviewByUserId(userId: string) {
+    return await prisma.interview.findFirst({
+      where: {
+        application: {
+          userId: userId
+        }
+      },
+      include: {
+        interviewer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            profileImage: true
+          }
+        }
+      },
+      orderBy: {
+        scheduledAt: 'desc'
+      }
+    });
+  }
+
   async deleteInterview(id: string) {
     return await prisma.interview.delete({
       where: { id },

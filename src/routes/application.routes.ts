@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createApplication, getApplications, updateStatus, updateNotes, updateStep, deleteApplication } from '../controllers/application.controller';
+import { createApplication, getApplications, getMyApplication, updateStatus, updateNotes, updateStep, deleteApplication } from '../controllers/application.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -7,6 +7,7 @@ const router = Router();
 // Application Routes
 router.use(requireAuth);
 
+router.get('/my', getMyApplication);
 router.get('/', getApplications);
 router.post('/', createApplication);
 router.patch('/:id/status', updateStatus);

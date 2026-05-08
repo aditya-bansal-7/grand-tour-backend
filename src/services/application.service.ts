@@ -3,13 +3,20 @@ import { ApplicationStatus } from '@prisma/client';
 
 class ApplicationService {
   async createApplication(data: any) {
-    return await prisma.application.create({
-      data: {
+    return await prisma.application.upsert({
+      where: { userId: data.userId },
+      update: {
+        status: data.status,
+        currentStepId: data.currentStepId,
+        notes: data.notes,
+        data: data.data, // This now stores the nested Stage > Section > Field structure
+      },
+      create: {
         userId: data.userId,
-        program: data.program,
-        status: 'PENDING',
-        paymentStatus: 'UNPAID',
-        phone: data.phone,
+        status: data.status || 'DRAFT',
+        currentStepId: data.currentStepId || 'application',
+        notes: data.notes,
+        data: data.data || {},
       },
       include: {
         user: true,
@@ -44,6 +51,13 @@ class ApplicationService {
     });
   }
 
+  async updateApplicationCurrentStep(id: string, currentStepId: string) {
+    return await prisma.application.update({
+      where: { id },
+      data: { currentStepId },
+    });
+  }
+
   async updateApplicationNotes(id: string, notes: string) {
     return await prisma.application.update({
       where: { id },
@@ -55,6 +69,24 @@ class ApplicationService {
     return await prisma.application.update({
       where: { id },
       data: { currentStepId },
+    });
+  }
+
+  async getApplicationByUserId(userId: string) {
+    return await prisma.application.findFirst({
+      where: { userId },
+      include: {
+        user: true,
+        interviews: {
+          orderBy: { scheduledAt: 'desc' },
+          take: 1
+        },
+        documents: true,
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        }
+      }
     });
   }
 

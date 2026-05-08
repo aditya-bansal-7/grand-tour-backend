@@ -10,6 +10,14 @@ export const getDocuments = async (req: Request, res: Response) => {
   });
 };
 
+export const createDocument = async (req: Request, res: Response) => {
+  const document = await documentService.createDocument(req.body);
+  res.status(201).json({
+    success: true,
+    data: document
+  });
+};
+
 export const updateStatus = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status, remarks } = req.body;

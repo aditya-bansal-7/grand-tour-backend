@@ -17,6 +17,10 @@ import notificationRoutes from './routes/notification.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import permissionRoutes from './routes/permission.routes';
 import documentRoutes from './routes/document.routes';
+import paymentRoutes from './routes/payment.routes';
+import hotelRoutes from './routes/hotel.routes';
+
+
 
 
 const app: Application = express();
@@ -48,6 +52,10 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/hotels', hotelRoutes);
+
+
 
 
 // Health Check Route
