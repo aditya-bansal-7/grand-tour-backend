@@ -73,6 +73,12 @@ model Application {
   status        ApplicationStatus @default(PENDING)
   currentStepId String?
 
+  passportNumber         String?
+  educationalInstitution String?
+  enrollmentStatus       String?
+  preferredDepartment    String?
+  statementOfPurpose     String?
+
   payment1Id String?  @unique
   payment1   Payment? @relation("Payment1", fields: [payment1Id], references: [id])
   payment2Id String?  @unique
@@ -226,4 +232,14 @@ model HotelAssignment {
   checkOut      DateTime
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., "HOSTEL_ASSIGNMENT", "PAYMENT_CONFIRMATION"
+  subject     String
+  body        String   @db.Text // HTML body with placeholders like {{name}}, {{applicationId}}
+  variables   String[] // List of supported variables for this template
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

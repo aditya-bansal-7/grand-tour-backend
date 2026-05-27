@@ -19,6 +19,8 @@ import permissionRoutes from './routes/permission.routes';
 import documentRoutes from './routes/document.routes';
 import paymentRoutes from './routes/payment.routes';
 import hotelRoutes from './routes/hotel.routes';
+import emailTemplateRoutes from './routes/emailTemplate.routes';
+
 
 
 
@@ -54,6 +56,8 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/hotels', hotelRoutes);
+app.use('/api/email-templates', emailTemplateRoutes);
+
 
 
 

@@ -1,4 +1,6 @@
 import { prisma } from '../config/db';
+import emailService from './email.service';
+
 
 export class HotelService {
   async getAllHotels() {
@@ -72,7 +74,21 @@ export class HotelService {
       data: { currentStepId: 'contract' }
     });
 
+    // Send assignment email
+    try {
+      await emailService.sendHostelAssignmentEmail(assignment.application.user.email, {
+        studentName: `${assignment.application.user.firstName} ${assignment.application.user.lastName}`,
+        hotelName: assignment.hotel.name,
+        checkIn: assignment.checkIn.toLocaleDateString(),
+        checkOut: assignment.checkOut.toLocaleDateString(),
+        applicationId: assignment.applicationId
+      });
+    } catch (error) {
+      console.error('Failed to send hostel assignment email:', error);
+    }
+
     return assignment;
+
   }
 
   async getAssignmentByApplicationId(applicationId: string) {

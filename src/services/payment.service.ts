@@ -1,5 +1,7 @@
 import { prisma } from '../config/db';
 import { PaymentStatus } from '@prisma/client';
+import emailService from './email.service';
+
 
 class PaymentService {
   async createPayment(data: {
@@ -42,13 +44,29 @@ class PaymentService {
   }
 
   async updatePaymentStatus(id: string, status: PaymentStatus) {
-    return await prisma.payment.update({
+    const payment = await prisma.payment.update({
       where: { id },
       data: { status },
       include: {
         user: true,
       },
     });
+
+    if (status === PaymentStatus.COMPLETED) {
+      try {
+        await emailService.sendPaymentConfirmationEmail(payment.user.email, {
+          studentName: `${payment.user.firstName} ${payment.user.lastName}`,
+          amount: payment.amount.toString(),
+          paymentType: payment.description || 'Application Fee',
+          applicationId: payment.applicationId
+        });
+      } catch (error) {
+        console.error('Failed to send payment confirmation email:', error);
+      }
+    }
+
+    return payment;
+
   }
 }
 
