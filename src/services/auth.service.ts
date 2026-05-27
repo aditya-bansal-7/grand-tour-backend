@@ -2,6 +2,7 @@ import { prisma } from '../config/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
+import emailService from './email.service';
 
 // Generate JWT Token
 const generateToken = (id: string) => {
@@ -29,6 +30,10 @@ class AuthService {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60000); // 10 minutes
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -37,9 +42,15 @@ class AuthService {
         email,
         profileImage: profileImage || null,
         password: hashedPassword,
-        role: (role as Role) || 'STUDENT'
+        role: (role as Role) || 'STUDENT',
+        isVerified: false,
+        otp,
+        otpExpiry
       }
     });
+
+    // Send OTP asynchronously
+    emailService.sendOtpEmail(email, otp).catch(console.error);
 
     return {
       id: user.id,
@@ -62,6 +73,11 @@ class AuthService {
 
     // Check password
     if (user?.password && await bcrypt.compare(password, user.password)) {
+      if (!user.isVerified) {
+        const error: any = new Error('Please verify your email first');
+        error.statusCode = 403;
+        throw error;
+      }
       return {
         id: user.id,
         email: user.email,
@@ -136,6 +152,67 @@ class AuthService {
       profileImage: user.profileImage,
       role: user.role,
       token: generateToken(user.id)
+    };
+  }
+
+  async sendOtp(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      const error: any = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60000);
+
+    await prisma.user.update({
+      where: { email },
+      data: { otp, otpExpiry }
+    });
+
+    await emailService.sendOtpEmail(email, otp);
+    return { success: true, message: 'OTP sent successfully' };
+  }
+
+  async verifyOtp(email: string, otp: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      const error: any = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (!user.otp || user.otp !== otp) {
+      const error: any = new Error('Invalid OTP');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (user.otpExpiry && new Date() > user.otpExpiry) {
+      const error: any = new Error('OTP has expired');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { email },
+      data: {
+        isVerified: true,
+        otp: null,
+        otpExpiry: null
+      }
+    });
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      profileImage: updatedUser.profileImage,
+      role: updatedUser.role,
+      token: generateToken(updatedUser.id)
     };
   }
 }

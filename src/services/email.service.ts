@@ -53,12 +53,12 @@ class EmailService {
   }
 
   // Pre-defined flows
-  async sendHostelAssignmentEmail(to: string, data: { 
-    studentName: string, 
-    hotelName: string, 
-    checkIn: string, 
+  async sendHostelAssignmentEmail(to: string, data: {
+    studentName: string,
+    hotelName: string,
+    checkIn: string,
     checkOut: string,
-    applicationId: string 
+    applicationId: string
   }) {
     return this.sendEmail(to, 'HOSTEL_ASSIGNMENT', {
       studentName: data.studentName,
@@ -69,11 +69,11 @@ class EmailService {
     });
   }
 
-  async sendPaymentConfirmationEmail(to: string, data: { 
-    studentName: string, 
-    amount: string, 
+  async sendPaymentConfirmationEmail(to: string, data: {
+    studentName: string,
+    amount: string,
     paymentType: string,
-    applicationId: string 
+    applicationId: string
   }) {
     return this.sendEmail(to, 'PAYMENT_CONFIRMATION', {
       studentName: data.studentName,
@@ -83,11 +83,11 @@ class EmailService {
     });
   }
 
-  async sendApplicationUpdateEmail(to: string, data: { 
-    studentName: string, 
-    status: string, 
+  async sendApplicationUpdateEmail(to: string, data: {
+    studentName: string,
+    status: string,
     notes?: string,
-    applicationId: string 
+    applicationId: string
   }) {
     return this.sendEmail(to, 'APPLICATION_UPDATE', {
       studentName: data.studentName,
@@ -95,6 +95,31 @@ class EmailService {
       notes: data.notes || 'No additional notes',
       applicationId: data.applicationId
     });
+  }
+
+  async sendOtpEmail(to: string, otp: string) {
+    try {
+      const mailOptions = {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to,
+        subject: 'Your Verification Code',
+        html: `
+          <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+            <h2>Verification Code</h2>
+            <p>Your one-time password (OTP) for authentication is:</p>
+            <h1 style="font-size: 36px; letter-spacing: 5px; color: #8B48F6;">${otp}</h1>
+            <p>This code will expire in 10 minutes.</p>
+          </div>
+        `,
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      logger.info(`OTP Email sent: ${info.messageId}`);
+      return info;
+    } catch (error) {
+      logger.error('Error sending OTP email:', error);
+      throw error;
+    }
   }
 }
 

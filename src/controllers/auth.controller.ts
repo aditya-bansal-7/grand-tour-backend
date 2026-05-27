@@ -49,3 +49,22 @@ export const googleLogin = async (req: Request, res: Response) => {
     data: user
   });
 };
+
+// @desc    Send OTP
+// @route   POST /api/auth/send-otp
+// @access  Public
+export const sendOtp = async (req: Request, res: Response) => {
+  const result = await authService.sendOtp(req.body.email);
+  res.status(200).json(result);
+};
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+export const verifyOtp = async (req: Request, res: Response) => {
+  const user = await authService.verifyOtp(req.body.email, req.body.otp);
+  res.status(200).json({
+    success: true,
+    data: user
+  });
+};
