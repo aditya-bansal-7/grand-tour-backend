@@ -20,6 +20,7 @@ import documentRoutes from './routes/document.routes';
 import paymentRoutes from './routes/payment.routes';
 import hotelRoutes from './routes/hotel.routes';
 import emailTemplateRoutes from './routes/emailTemplate.routes';
+import applicationPageContentRoutes from './routes/applicationPageContent.routes';
 
 
 
@@ -57,6 +58,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/hotels', hotelRoutes);
 app.use('/api/email-templates', emailTemplateRoutes);
+app.use('/api/application-page-content', applicationPageContentRoutes);
 
 
 
