@@ -81,6 +81,7 @@ class ApplicationService {
           }
         },
         interviews: true,
+        documents: true,
       },
       orderBy: {
         createdAt: 'desc',
