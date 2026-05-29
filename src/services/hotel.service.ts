@@ -1,5 +1,6 @@
 import { prisma } from '../config/db';
 import emailService from './email.service';
+import notificationService from './notification.service';
 
 
 export class HotelService {
@@ -83,8 +84,15 @@ export class HotelService {
         checkOut: assignment.checkOut.toLocaleDateString(),
         applicationId: assignment.applicationId
       });
+
+      await notificationService.notify(
+        assignment.application.userId,
+        'Hotel Assigned',
+        `You have been assigned to ${assignment.hotel.name}. Please check your dashboard for details.`,
+        'SUCCESS'
+      );
     } catch (error) {
-      console.error('Failed to send hostel assignment email:', error);
+      console.error('Failed to send hostel assignment email or notification:', error);
     }
 
     return assignment;

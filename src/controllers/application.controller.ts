@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import applicationService from '../services/application.service';
 import { ApplicationStatus } from '@prisma/client';
 import activityService from '../services/activity.service';
-import notificationService from '../services/notification.service';
 import workflowService from '../services/workflow.service';
 
 export const createApplication = async (req: Request, res: Response) => {
@@ -60,9 +59,6 @@ export const updateStatus = async (req: Request, res: Response) => {
       await applicationService.updateApplicationCurrentStep(id, nextStepId);
     }
   }
-
-  // Notify user
-  await notificationService.notify(application.userId, 'Application Update', `Your application status has been updated to ${status}.`, 'INFO');
 
   res.status(200).json({
     success: true,

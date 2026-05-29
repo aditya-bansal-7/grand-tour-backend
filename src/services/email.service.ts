@@ -69,6 +69,20 @@ class EmailService {
     });
   }
 
+  async sendPaymentSubmittedEmail(to: string, data: {
+    studentName: string,
+    amount: string,
+    paymentType: string,
+    applicationId: string
+  }) {
+    return this.sendEmail(to, 'PAYMENT_SUBMITTED', {
+      studentName: data.studentName,
+      amount: data.amount,
+      paymentType: data.paymentType,
+      applicationId: data.applicationId
+    });
+  }
+
   async sendPaymentConfirmationEmail(to: string, data: {
     studentName: string,
     amount: string,
@@ -80,6 +94,18 @@ class EmailService {
       amount: data.amount,
       paymentType: data.paymentType,
       applicationId: data.applicationId
+    });
+  }
+
+  async sendApplicationSubmittedEmail(to: string, data: {
+    studentName: string,
+    applicationId: string,
+    status?: string
+  }) {
+    return this.sendEmail(to, 'APPLICATION_SUBMITTED', {
+      studentName: data.studentName,
+      applicationId: data.applicationId,
+      status: data.status || 'SUBMITTED'
     });
   }
 

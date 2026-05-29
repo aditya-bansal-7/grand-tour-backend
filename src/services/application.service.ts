@@ -1,11 +1,17 @@
 import { prisma } from '../config/db';
 import { ApplicationStatus } from '@prisma/client';
 import emailService from './email.service';
+import notificationService from './notification.service';
 
 
 class ApplicationService {
   async createApplication(data: any) {
-    return await prisma.application.upsert({
+    const existingApplication = await prisma.application.findUnique({
+      where: { userId: data.userId },
+      select: { id: true }
+    });
+
+    const application = await prisma.application.upsert({
       where: { userId: data.userId },
       update: {
         status: data.status,
@@ -41,10 +47,36 @@ class ApplicationService {
         payments: true,
       },
     });
+
+    if (!existingApplication && application.status !== 'DRAFT') {
+      try {
+        await emailService.sendApplicationSubmittedEmail(application.user.email, {
+          studentName: `${application.user.firstName} ${application.user.lastName}`.trim(),
+          applicationId: application.id,
+          status: application.status,
+        });
+
+        await notificationService.notify(
+          application.userId,
+          'Application Submitted',
+          'Your application has been submitted successfully and is being reviewed.',
+          'SUCCESS'
+        );
+      } catch (error) {
+        console.error('Failed to send application submitted email or notification:', error);
+      }
+    }
+
+    return application;
   }
 
   async updateApplication(id: string, data: any) {
-    return await prisma.application.update({
+    const existingApplication = await prisma.application.findUnique({
+      where: { id },
+      select: { status: true }
+    });
+
+    const application = await prisma.application.update({
       where: { id },
       data: {
         status: data.status,
@@ -66,6 +98,20 @@ class ApplicationService {
         payments: true,
       }
     });
+
+    if (existingApplication && existingApplication.status === 'DRAFT' && application.status !== 'DRAFT') {
+      try {
+        await emailService.sendApplicationSubmittedEmail(application.user.email, {
+          studentName: `${application.user.firstName} ${application.user.lastName}`.trim(),
+          applicationId: application.id,
+          status: application.status,
+        });
+      } catch (error) {
+        console.error('Failed to send application submitted email:', error);
+      }
+    }
+
+    return application;
   }
 
   async getAllApplications() {
@@ -105,8 +151,15 @@ class ApplicationService {
         notes: application.notes || undefined,
         applicationId: application.id
       });
+
+      await notificationService.notify(
+        application.userId,
+        'Application Status Updated',
+        `Your application status has been updated to ${application.status}.`,
+        application.status === 'REJECTED' ? 'ERROR' : 'INFO'
+      );
     } catch (error) {
-      console.error('Failed to send application update email:', error);
+      console.error('Failed to send application update email or notification:', error);
     }
 
     return application;

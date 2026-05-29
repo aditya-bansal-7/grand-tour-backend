@@ -1,6 +1,7 @@
 import { prisma } from '../config/db';
 import { PaymentStatus } from '@prisma/client';
 import emailService from './email.service';
+import notificationService from './notification.service';
 
 
 class PaymentService {
@@ -12,7 +13,7 @@ class PaymentService {
     utrNumber: string;
     screenshotUrl: string;
   }) {
-    return await prisma.payment.create({
+    const payment = await prisma.payment.create({
       data: {
         userId: data.userId,
         applicationId: data.applicationId,
@@ -23,6 +24,37 @@ class PaymentService {
         status: PaymentStatus.PENDING,
       },
     });
+
+    const user = await prisma.user.findUnique({
+      where: { id: data.userId },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+      }
+    });
+
+    if (user) {
+      try {
+        await emailService.sendPaymentSubmittedEmail(user.email, {
+          studentName: `${user.firstName} ${user.lastName}`.trim(),
+          amount: payment.amount.toString(),
+          paymentType: payment.description || 'Application Fee',
+          applicationId: payment.applicationId
+        });
+
+        await notificationService.notify(
+          data.userId,
+          'Payment Submitted',
+          'Your payment has been submitted and is awaiting review.',
+          'INFO'
+        );
+      } catch (error) {
+        console.error('Failed to send payment submitted email or notification:', error);
+      }
+    }
+
+    return payment;
   }
 
   async getAllPayments() {
@@ -60,8 +92,15 @@ class PaymentService {
           paymentType: payment.description || 'Application Fee',
           applicationId: payment.applicationId
         });
+
+        await notificationService.notify(
+          payment.userId,
+          'Payment Confirmed',
+          `Your payment of ₹${payment.amount} has been approved.`,
+          'SUCCESS'
+        );
       } catch (error) {
-        console.error('Failed to send payment confirmation email:', error);
+        console.error('Failed to send payment confirmation email or notification:', error);
       }
     }
 

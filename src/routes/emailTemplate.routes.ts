@@ -8,9 +8,6 @@ router.use(restrictTo('ADMIN', 'SUPER_ADMIN'));
 
 router.get('/', emailTemplateController.getTemplates);
 router.get('/:id', emailTemplateController.getTemplate);
-router.post('/', emailTemplateController.createTemplate);
 router.put('/:id', emailTemplateController.updateTemplate);
-router.delete('/:id', emailTemplateController.deleteTemplate);
-router.post('/seed', emailTemplateController.seedTemplates);
 
 export default router;

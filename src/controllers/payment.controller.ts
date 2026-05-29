@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import paymentService from '../services/payment.service';
 import activityService from '../services/activity.service';
-import notificationService from '../services/notification.service';
 import { PaymentStatus } from '@prisma/client';
 import { prisma } from '../config/db';
 
@@ -61,14 +60,6 @@ export const approvePayment = async (req: Request, res: Response) => {
     'PAYMENT_UPDATE',
     undefined,
     (req as any).user?.id
-  );
-
-  // Notify user
-  await notificationService.notify(
-    payment.userId,
-    'Payment Update',
-    `Your payment of ₹${payment.amount} has been ${status === 'COMPLETED' ? 'approved' : 'rejected'}.`,
-    status === 'COMPLETED' ? 'SUCCESS' : 'ERROR'
   );
 
   // If payment is completed, move application to hotel step

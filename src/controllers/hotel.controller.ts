@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import hotelService from '../services/hotel.service';
 import activityService from '../services/activity.service';
-import notificationService from '../services/notification.service';
 import applicationService from '../services/application.service';
 
 export const getHotels = async (req: Request, res: Response) => {
@@ -47,14 +46,6 @@ export const assignHotel = async (req: Request, res: Response) => {
     'HOTEL_ASSIGNED',
     applicationId,
     (req as any).user?.id
-  );
-
-  // Notify candidate
-  await notificationService.notify(
-    assignment.application.userId,
-    'Hotel Assigned',
-    `You have been assigned to ${assignment.hotel.name}. Please check your dashboard for details.`,
-    'SUCCESS'
   );
 
   // Automatically move to next step?
