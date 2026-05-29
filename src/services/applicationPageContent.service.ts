@@ -1,6 +1,6 @@
 import { prisma } from '../config/db';
 
-const defaultPageContentByPageKey = {
+const defaultPageContentByPageKey: Record<string, any> = {
   application: {
     pageKey: 'application',
     title: 'Build Your Editorial Profile',

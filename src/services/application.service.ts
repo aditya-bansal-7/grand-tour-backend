@@ -150,6 +150,11 @@ class ApplicationService {
         payment1: true,
         payment2: true,
         payments: true,
+        hotelAssignment: {
+          include: {
+            hotel: true
+          }
+        }
       }
     });
   }

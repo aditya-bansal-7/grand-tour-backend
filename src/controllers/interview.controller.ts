@@ -1,8 +1,108 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { google } from 'googleapis';
 import logger from '../utils/logger';
 
 const prisma = new PrismaClient();
+
+const normalizePrivateKey = (value?: string) => (value || '').replace(/\\n/g, '\n').trim();
+
+const createGoogleMeetClient = () => {
+    const serviceAccountEmail = process.env.GOOGLE_MEET_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = normalizePrivateKey(process.env.GOOGLE_MEET_PRIVATE_KEY);
+
+    if (!serviceAccountEmail || !privateKey) {
+        return null;
+    }
+
+    const auth = new google.auth.JWT({
+        email: serviceAccountEmail,
+        key: privateKey,
+        scopes: ['https://www.googleapis.com/auth/calendar.events'],
+    });
+
+    return {
+        auth,
+        calendarId: process.env.GOOGLE_MEET_CALENDAR_ID || 'primary',
+    };
+};
+
+const generateMeetLinkForSlot = async (slot: { id: string; startTime: Date; endTime: Date }) => {
+    const googleMeetClient = createGoogleMeetClient();
+
+    if (!googleMeetClient) {
+        logger.warn('Google Meet integration is not configured. Skipping automatic meeting link generation.');
+        return null;
+    }
+
+    try {
+        const calendar = google.calendar({ version: 'v3', auth: googleMeetClient.auth });
+        const requestId = `interview-${slot.id}-${slot.startTime.getTime()}`;
+
+        const event = await calendar.events.insert({
+            calendarId: googleMeetClient.calendarId,
+            conferenceDataVersion: 1,
+            sendUpdates: 'none',
+            requestBody: {
+                summary: 'Interview Session',
+                start: {
+                    dateTime: slot.startTime.toISOString(),
+                    timeZone: 'UTC',
+                },
+                end: {
+                    dateTime: slot.endTime.toISOString(),
+                    timeZone: 'UTC',
+                },
+                conferenceData: {
+                    createRequest: {
+                        requestId,
+                        conferenceSolutionKey: {
+                            type: 'hangoutsMeet',
+                        },
+                    },
+                },
+            },
+        });
+
+        const generatedLink = event.data.hangoutLink || event.data.conferenceData?.entryPoints?.find((entryPoint) => entryPoint.entryPointType === 'video')?.uri;
+
+        if (!generatedLink) {
+            logger.warn('Google Meet link was not returned from calendar API.');
+            return null;
+        }
+
+        return generatedLink;
+    } catch (error) {
+        logger.error('Error generating Google Meet link:', error);
+        return null;
+    }
+};
+
+const syncMeetLinkForSlot = async (slot: { id: string; applicationId: string | null; meetLink: string | null }, meetLink: string | null) => {
+    const persistedSlot = await prisma.interviewSlot.update({
+        where: { id: slot.id },
+        data: {
+            meetLink,
+        },
+    });
+
+    if (meetLink && slot.applicationId) {
+        const interview = await prisma.interview.findFirst({
+            where: { applicationId: slot.applicationId },
+        });
+
+        if (interview) {
+            await prisma.interview.update({
+                where: { id: interview.id },
+                data: {
+                    locationUrl: meetLink,
+                },
+            });
+        }
+    }
+
+    return persistedSlot;
+};
 
 export const getMy = async (req: Request, res: Response) => {
   const userId = (req as any).user.id; // Assuming user is attached by auth middleware
@@ -242,6 +342,24 @@ export const bookSlot = async (req: Request, res: Response) => {
       },
     });
 
+    let generatedMeetLink = updatedSlot.meetLink;
+
+    if (!generatedMeetLink) {
+        generatedMeetLink = await generateMeetLinkForSlot({
+            id: updatedSlot.id,
+            startTime: updatedSlot.startTime,
+            endTime: updatedSlot.endTime,
+        });
+
+        if (generatedMeetLink) {
+            await syncMeetLinkForSlot({
+                id: updatedSlot.id,
+                applicationId: updatedSlot.applicationId,
+                meetLink: updatedSlot.meetLink,
+            }, generatedMeetLink);
+        }
+    }
+
     // Create/Update Interview record
     const application = await prisma.application.findUnique({
         where: { id: applicationId },
@@ -249,18 +367,24 @@ export const bookSlot = async (req: Request, res: Response) => {
     });
 
     if (application) {
+        const existingInterview = await prisma.interview.findFirst({
+            where: { applicationId },
+        });
+
         await prisma.interview.upsert({
-            where: { id: (await prisma.interview.findFirst({ where: { applicationId } }))?.id || 'temp-id' },
+            where: { id: existingInterview?.id || 'temp-id' },
             create: {
                 applicationId,
                 interviewerId: application.userId, // Default to student for now, admin will change
                 scheduledAt: slot.startTime,
+                locationUrl: generatedMeetLink || null,
                 status: 'PENDING',
                 notes: 'Custom slot booked'
             },
             update: {
                 scheduledAt: slot.startTime,
-                status: 'PENDING'
+                status: 'PENDING',
+                locationUrl: generatedMeetLink || null,
             }
         });
 
@@ -273,7 +397,10 @@ export const bookSlot = async (req: Request, res: Response) => {
         });
     }
 
-    return res.status(200).json(updatedSlot);
+    return res.status(200).json({
+        ...updatedSlot,
+        meetLink: generatedMeetLink,
+    });
   } catch (error) {
     logger.error('Error booking slot:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -304,23 +431,29 @@ export const updateSlotLink = async (req: Request, res: Response) => {
     const { meetLink } = req.body;
 
     try {
-        const slot = await prisma.interviewSlot.update({
-            where: { id },
-            data: { meetLink }
+        const existingSlot = await prisma.interviewSlot.findUnique({
+            where: { id }
         });
 
-        // Also update Interview record if it exists
-        if (slot.applicationId) {
-            const interview = await prisma.interview.findFirst({
-                where: { applicationId: slot.applicationId }
-            });
-            if (interview) {
-                await prisma.interview.update({
-                    where: { id: interview.id },
-                    data: { locationUrl: meetLink }
-                });
-            }
+        if (!existingSlot) {
+            return res.status(404).json({ error: 'Interview slot not found' });
         }
+
+        let generatedMeetLink: string | null = typeof meetLink === 'string' ? meetLink.trim() || null : null;
+
+        if (!generatedMeetLink) {
+            generatedMeetLink = await generateMeetLinkForSlot({
+                id: existingSlot.id,
+                startTime: existingSlot.startTime,
+                endTime: existingSlot.endTime,
+            }) || null;
+        }
+
+        const slot = await syncMeetLinkForSlot({
+            id: existingSlot.id,
+            applicationId: existingSlot.applicationId,
+            meetLink: existingSlot.meetLink,
+        }, generatedMeetLink);
 
         return res.status(200).json(slot);
     } catch (error) {
